@@ -53,10 +53,8 @@ from app.utils.jwt_handler import create_access_token
 Base.metadata.create_all(bind=engine)
 
 
-app = FastAPI(
-    title="AI Interview Platform",
-    version="1.0"
-)
+app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -66,7 +64,7 @@ app.add_middleware(
     ],
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
