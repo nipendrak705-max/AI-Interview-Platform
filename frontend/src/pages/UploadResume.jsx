@@ -17,19 +17,26 @@ function UploadResume() {
       return;
     }
 
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login again.");
+      navigate("/");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
     try {
       setLoading(true);
 
-      const response = await api.post("/upload-resume", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await api.post("/upload-resume", formData);
 
-      setLoading(false);
+      if (!response.data.interview_id || !response.data.questions) {
+        alert(response.data.message || "Resume processing failed.");
+        return;
+      }
 
       navigate("/interview", {
         state: {
@@ -39,20 +46,30 @@ function UploadResume() {
         },
       });
     } catch (err) {
-      console.log(err);
+      console.error(err);
+
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        alert("Session expired. Please login again.");
+        navigate("/");
+      } else {
+        alert(
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          "Upload Failed"
+        );
+      }
+    } finally {
       setLoading(false);
-      alert("Upload Failed");
     }
   };
 
   return (
     <Layout>
-     {loading && <Loading />}
+      {loading && <Loading />}
 
       <div className="max-w-3xl mx-auto">
-
         <div className="bg-white rounded-2xl shadow-xl p-10">
-
           <h1 className="text-4xl font-bold text-center mb-3">
             Upload Resume
           </h1>
@@ -62,13 +79,12 @@ function UploadResume() {
           </p>
 
           <div className="border-2 border-dashed border-blue-400 rounded-xl p-10 text-center">
-
             <FaFileUpload className="text-6xl text-blue-600 mx-auto mb-5" />
 
             <input
               type="file"
               accept=".pdf"
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
               className="mb-4"
             />
 
@@ -78,16 +94,15 @@ function UploadResume() {
                 {file.name}
               </p>
             )}
-
           </div>
 
           <button
             onClick={uploadResume}
-            className="mt-8 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
+            disabled={loading}
+            className="mt-8 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
           >
             {loading ? "Uploading..." : "Generate AI Interview"}
           </button>
-
         </div>
       </div>
     </Layout>
