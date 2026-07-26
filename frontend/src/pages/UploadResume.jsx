@@ -19,8 +19,9 @@ function UploadResume() {
 
     const token = localStorage.getItem("token");
 
-    if (!token) {
-      alert("Please login again.");
+    if (!token || token === "undefined" || token === "null") {
+      localStorage.removeItem("token");
+      alert("Your login session is invalid. Please login again.");
       navigate("/");
       return;
     }
@@ -31,12 +32,11 @@ function UploadResume() {
     try {
       setLoading(true);
 
-      const response = await api.post("/upload-resume", formData);
-
-      if (!response.data.interview_id || !response.data.questions) {
-        alert(response.data.message || "Resume processing failed.");
-        return;
-      }
+      const response = await api.post("/upload-resume", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       navigate("/interview", {
         state: {
@@ -46,7 +46,7 @@ function UploadResume() {
         },
       });
     } catch (err) {
-      console.error(err);
+      console.error("UPLOAD ERROR:", err.response?.data || err.message);
 
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
@@ -56,6 +56,7 @@ function UploadResume() {
         alert(
           err.response?.data?.detail ||
           err.response?.data?.message ||
+          err.response?.data?.error ||
           "Upload Failed"
         );
       }
